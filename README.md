@@ -160,6 +160,8 @@ When the EXE runs, it creates portable caches next to the EXE:
 
 If you want to bundle `ffmpeg.exe`, place it at `bin\\ffmpeg.exe` in the same folder as the EXE.
 
+Note: If you build inside WSL, PyInstaller produces a Linux binary. To generate a Windows `.exe`, run the build on Windows (PowerShell or CMD) using a Windows Python environment.
+
 ---
 
 👉 ⚡Created by a neurodivergent mind — building tools that respect different brains. 🧠
