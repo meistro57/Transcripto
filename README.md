@@ -168,6 +168,16 @@ Get a HuggingFace token here:
 python whisper_to_text_diarized.py "input_file.mp4"
 ```
 
+### Quick GPU Check
+
+```bash
+python - <<'PY'
+import torch
+print("cuda:", torch.cuda.is_available())
+print("mps:", hasattr(torch.backends, "mps") and torch.backends.mps.is_available())
+PY
+```
+
 ---
 
 ## 🧠 Pipeline Overview
@@ -208,7 +218,47 @@ MODEL_SIZE=base
 FORCE_CPU=0
 MIN_SPEAKERS=2
 MAX_SPEAKERS=2
+DEVICE=auto
+COMPUTE_TYPE=
+ENABLE_TF32=0
 ```
+
+Notes:
+* `DEVICE=auto` will prefer CUDA, then Apple MPS, then CPU. You can force `cpu`, `cuda`, or `mps`.
+* `COMPUTE_TYPE` lets you override precision (e.g., `float16` on CUDA). Leave blank for defaults.
+* `ENABLE_TF32=1` can speed up CUDA on Ampere+ GPUs with a small precision tradeoff.
+
+---
+
+## 🖥️ GPU Setup (Windows / WSL2)
+
+When a GPU is present but PyTorch lacks CUDA support, the app will:
+* Detect platform (Windows vs WSL2)
+* Detect CUDA driver version (via `nvidia-smi`)
+* Print a pip install command for the closest supported CUDA build
+
+Example log suggestion:
+
+```bash
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+```
+
+If the suggested command fails, use the PyTorch “Get Started” selector and choose your OS + Pip + CUDA version.
+
+### GPU Setup Assistant (Windows / WSL2)
+
+Run:
+
+```bash
+python setup_gpu.py
+```
+
+This script checks:
+* NVIDIA GPU presence
+* CUDA driver version
+* PyTorch CUDA availability
+
+It prints the best matching pip command for your system.
 
 ---
 
