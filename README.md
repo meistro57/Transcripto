@@ -53,6 +53,13 @@ sudo apt-get update
 sudo apt-get install -y ffmpeg
 ```
 
+4. Install Tkinter (GUI dependency):
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-tk
+```
+
 ## Hugging Face Token
 
 Create a token at:

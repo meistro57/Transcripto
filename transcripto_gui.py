@@ -14,8 +14,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+except Exception as e:
+    print("Tkinter is not available. On Linux/WSL2, install it with:")
+    print("  sudo apt-get update && sudo apt-get install -y python3-tk")
+    raise
 
 from dotenv import load_dotenv
 
