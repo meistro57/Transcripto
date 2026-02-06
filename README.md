@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/80faa50f-9c7b-48e1-9735-278c972a9fbd" width="300"/>
+</p>
 # 🎙️ WhisperX Speaker Transcription Pipeline
 
 > Transcribes audio and video into timestamped, speaker-labeled transcripts using WhisperX, Voice Activity Detection, alignment, and speaker diarization.
