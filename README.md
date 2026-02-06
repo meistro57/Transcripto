@@ -158,7 +158,7 @@ MODEL_SIZE=base
 
 Get a HuggingFace token here:
 
-👉 [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+[https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
 
 ---
 
@@ -237,7 +237,7 @@ When a GPU is present but PyTorch lacks CUDA support, the app will:
 * Detect CUDA driver version (via `nvidia-smi`)
 * Print a pip install command for the closest supported CUDA build
 
-Example log suggestion:
+Example log output:
 
 ```bash
 python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
@@ -273,6 +273,11 @@ Install FFmpeg and ensure it is available in your system PATH.
 ### HuggingFace Token Missing
 
 Diarization requires authentication. Add your token to `.env`.
+
+**About the HuggingFace token and cost**
+
+The token is only used to authenticate and download the diarization model weights from HuggingFace. It does not incur usage-based charges by itself. Any compute cost comes from running the models on your own machine.
+If you use private or paid HuggingFace model repositories, you may still need an appropriate subscription or access plan.
 
 ---
 
