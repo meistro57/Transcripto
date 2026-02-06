@@ -97,6 +97,17 @@ Double-click `transcripto_gui.py` (or run it from a terminal):
 python transcripto_gui.py
 ```
 
+### Selecting Files
+
+By default, Transcripto processes **all supported files** in the selected folder.  
+If you want to process a subset, switch the selection mode to **Selected files** and use the checkbox list.
+
+You can populate the list in two ways:
+- **Load from folder** (scans the current folder)
+- **Pick files...** (multi-select individual files)
+
+If you select files from multiple folders, `summary.txt` is written to the app folder.
+
 ## Outputs
 
 For each input file `example.mp4`, Transcripto writes:
@@ -126,6 +137,28 @@ If you see HuggingFace cache symlink warnings, you can ignore them or run the ap
 
 - The app uses `TRANSFORMERS_NO_TORCHVISION=1` to avoid torchvision import issues.
 - On GPU systems, PyTorch must be installed with CUDA support.
+
+## Build an EXE (Windows)
+
+Install PyInstaller:
+
+```powershell
+pip install -U pyinstaller
+```
+
+Build a Windows GUI EXE:
+
+```powershell
+pyinstaller --onefile --windowed --name Transcripto transcripto_gui.py
+```
+
+The EXE will be created in `dist\\Transcripto.exe`.
+
+When the EXE runs, it creates portable caches next to the EXE:
+- `_hf_cache`
+- `_torch_cache`
+
+If you want to bundle `ffmpeg.exe`, place it at `bin\\ffmpeg.exe` in the same folder as the EXE.
 
 ---
 

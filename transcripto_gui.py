@@ -106,6 +106,7 @@ class Options:
     move_done: bool
     move_failed: bool
     overwrite_outputs: bool
+    selected_files: Optional[List[Path]] = None
 
 
 # -----------------------------
@@ -283,10 +284,14 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
     setup_safe_globals()
     ensure_cache_dirs()
 
-    folder = options.folder
-    ledger = load_ledger(folder)
+    ledger_by_folder: Dict[Path, Dict[str, Any]] = {}
 
-    candidates = sorted([p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED_EXTS])
+    if options.selected_files:
+        candidates = [p for p in options.selected_files if p.is_file() and p.suffix.lower() in SUPPORTED_EXTS]
+    else:
+        folder = options.folder
+        candidates = sorted([p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED_EXTS])
+
     if not candidates:
         ui_queue.put(("status", "No compatible media files found."))
         return
@@ -304,7 +309,12 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
             ui_queue.put(("status", "Stopped by user."))
             break
 
-        if not options.overwrite_outputs and already_done(media_path, folder, ledger):
+        parent_folder = media_path.parent
+        if parent_folder not in ledger_by_folder:
+            ledger_by_folder[parent_folder] = load_ledger(parent_folder)
+        ledger = ledger_by_folder[parent_folder]
+
+        if not options.overwrite_outputs and already_done(media_path, parent_folder, ledger):
             logging.info(f"Skipping (already done): {media_path.name}")
             continue
 
@@ -343,10 +353,10 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
                 "min_speakers": options.min_speakers,
                 "max_speakers": options.max_speakers,
             }
-            save_ledger(folder, ledger)
+            save_ledger(parent_folder, ledger)
 
             if options.move_done:
-                done_dir = folder / "done"
+                done_dir = parent_folder / "done"
                 done_dir.mkdir(exist_ok=True)
                 shutil.move(str(media_path), str(done_dir / media_path.name))
 
@@ -356,7 +366,7 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
             if hint:
                 logging.error(hint)
             if options.move_failed:
-                failed_dir = folder / "failed"
+                failed_dir = parent_folder / "failed"
                 failed_dir.mkdir(exist_ok=True)
                 try:
                     shutil.move(str(media_path), str(failed_dir / media_path.name))
@@ -365,7 +375,15 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
             continue
 
     if summary_lines:
-        (folder / SUMMARY_FILE).write_text("\n".join(summary_lines).strip() + "\n", encoding="utf-8")
+        if options.selected_files:
+            parents = {p.parent for p in candidates}
+            if len(parents) == 1:
+                summary_path = parents.pop() / SUMMARY_FILE
+            else:
+                summary_path = app_dir() / SUMMARY_FILE
+        else:
+            summary_path = options.folder / SUMMARY_FILE
+        summary_path.write_text("\n".join(summary_lines).strip() + "\n", encoding="utf-8")
 
     ui_queue.put(("status", "Done."))
 
@@ -387,6 +405,7 @@ class TranscriptoGUI(tk.Tk):
 
         self._build_ui()
         setup_logging(self.log_queue)
+        self._load_files_from_folder()
         self._poll_queues()
 
     def _build_ui(self) -> None:
@@ -427,6 +446,36 @@ class TranscriptoGUI(tk.Tk):
         ttk.Checkbutton(opts_frame, text="Move failed to failed", variable=self.move_failed_var).grid(row=1, column=2, sticky="w", padx=8)
         ttk.Checkbutton(opts_frame, text="Overwrite outputs", variable=self.overwrite_var).grid(row=1, column=3, sticky="w", padx=8)
 
+        self.selection_mode = tk.StringVar(value="folder")
+        ttk.Label(opts_frame, text="Selection").grid(row=2, column=0, sticky="w", padx=8, pady=6)
+        ttk.Radiobutton(opts_frame, text="Folder (all)", variable=self.selection_mode, value="folder").grid(row=2, column=1, sticky="w", padx=8)
+        ttk.Radiobutton(opts_frame, text="Selected files", variable=self.selection_mode, value="files").grid(row=2, column=2, sticky="w", padx=8)
+
+        # File selection list
+        files_frame = ttk.Labelframe(self, text="Files (for Selected files mode)")
+        files_frame.pack(fill="both", expand=False, padx=12, pady=8)
+
+        btns = ttk.Frame(files_frame)
+        btns.pack(fill="x", padx=8, pady=6)
+        ttk.Button(btns, text="Load from folder", command=self._load_files_from_folder).pack(side="left")
+        ttk.Button(btns, text="Pick files...", command=self._pick_files).pack(side="left", padx=6)
+        ttk.Button(btns, text="Select all", command=lambda: self._select_all_files(True)).pack(side="left", padx=6)
+        ttk.Button(btns, text="Select none", command=lambda: self._select_all_files(False)).pack(side="left")
+
+        self.files_canvas = tk.Canvas(files_frame, height=140)
+        self.files_canvas.pack(side="left", fill="both", expand=True, padx=8, pady=6)
+        self.files_scroll = ttk.Scrollbar(files_frame, orient="vertical", command=self.files_canvas.yview)
+        self.files_scroll.pack(side="right", fill="y")
+        self.files_canvas.configure(yscrollcommand=self.files_scroll.set)
+
+        self.files_inner = ttk.Frame(self.files_canvas)
+        self.files_canvas.create_window((0, 0), window=self.files_inner, anchor="nw")
+        self.files_inner.bind(
+            "<Configure>",
+            lambda e: self.files_canvas.configure(scrollregion=self.files_canvas.bbox("all")),
+        )
+        self.file_items: List[Tuple[Path, tk.BooleanVar]] = []
+
         # Token
         token_frame = ttk.Labelframe(self, text="Hugging Face Token (first run only for diarization model download)")
         token_frame.pack(fill="x", padx=12, pady=8)
@@ -460,6 +509,42 @@ class TranscriptoGUI(tk.Tk):
         path = filedialog.askdirectory(initialdir=self.folder_var.get())
         if path:
             self.folder_var.set(path)
+            self._load_files_from_folder()
+
+    def _clear_file_list(self) -> None:
+        for child in self.files_inner.winfo_children():
+            child.destroy()
+        self.file_items.clear()
+
+    def _load_files_from_folder(self) -> None:
+        folder = Path(self.folder_var.get())
+        if not folder.exists():
+            return
+        files = sorted([p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in SUPPORTED_EXTS])
+        self._populate_file_list(files)
+
+    def _pick_files(self) -> None:
+        filetypes = [
+            ("Media", "*.mp4 *.mp3 *.m4a *.wav *.flac *.mov *.mkv *.avi *.webm"),
+            ("All files", "*.*"),
+        ]
+        paths = filedialog.askopenfilenames(initialdir=self.folder_var.get(), filetypes=filetypes)
+        if not paths:
+            return
+        files = [Path(p) for p in paths]
+        self._populate_file_list(files)
+
+    def _populate_file_list(self, files: List[Path]) -> None:
+        self._clear_file_list()
+        for p in files:
+            var = tk.BooleanVar(value=True)
+            chk = ttk.Checkbutton(self.files_inner, text=p.name, variable=var)
+            chk.pack(anchor="w")
+            self.file_items.append((p, var))
+
+    def _select_all_files(self, value: bool) -> None:
+        for _, var in self.file_items:
+            var.set(value)
 
     def _save_token(self) -> None:
         token = self.token_var.get().strip()
@@ -518,7 +603,18 @@ class TranscriptoGUI(tk.Tk):
             move_done=self.move_done_var.get(),
             move_failed=self.move_failed_var.get(),
             overwrite_outputs=self.overwrite_var.get(),
+            selected_files=None,
         )
+
+        if self.selection_mode.get() == "files":
+            selected = [p for p, var in self.file_items if var.get()]
+            if not selected:
+                messagebox.showerror("Files", "No files selected.")
+                self.progress.stop()
+                self.start_btn.configure(state="normal")
+                self.stop_btn.configure(state="disabled")
+                return
+            options.selected_files = selected
 
         def run() -> None:
             try:
