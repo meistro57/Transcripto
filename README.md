@@ -1,344 +1,124 @@
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/80faa50f-9c7b-48e1-9735-278c972a9fbd" width="300"/>
-</p>
-# 🎙️ WhisperX Speaker Transcription Pipeline
+# Transcripto
 
-> Transcribes audio and video into timestamped, speaker-labeled transcripts using WhisperX, Voice Activity Detection, alignment, and speaker diarization.
+Windows-first, double-click transcription app using WhisperX for ASR + alignment and Pyannote (via WhisperX diarize utilities) for speaker diarization.
 
----
+## Features
 
-## ✨ Features
+- Simple Tkinter GUI with folder picker, Start/Stop, progress, and live log
+- WhisperX transcription with alignment and diarization
+- Portable offline cache in the app folder
+- Batch mode with skip logic, done/failed moves, and summary output
 
-* 🎧 Supports audio **and** video input
-* 🧠 Automatic speech recognition using WhisperX
-* 🗣️ Multi-speaker diarization (Speaker A / Speaker B)
-* ⏱️ Precise timestamp alignment
-* 📄 Generates both human-readable and structured outputs
-* 📦 Works with most media formats via FFmpeg
-* 🪟 Windows, WSL, and Linux compatible
-* 🔐 Uses HuggingFace authentication for diarization models
+## Install (Windows)
 
----
-
-## 📁 Output
-
-For each input file:
-
-```
-example.mp4
-```
-
-The pipeline generates:
-
-```
-example.txt              → readable transcript
-example.json             → structured speaker segments
-transcription.log        → processing log
-```
-
----
-
-## 📜 Example Output
-
-### TXT
-
-```
-[12.4s - 18.1s] Speaker A: ADHD is not a deficit...
-[18.2s - 23.6s] Speaker B: That’s actually a huge misunderstanding...
-```
-
-### JSON
-
-```json
-{
-  "speaker": "Speaker A",
-  "start": 12.4,
-  "end": 18.1,
-  "text": "ADHD is not a deficit..."
-}
-```
-
----
-
-## 🎬 Supported Input Formats
-
-### Audio
-
-* mp3
-* wav
-* m4a
-* flac
-* ogg
-* opus
-* aac
-
-### Video
-
-* mp4
-* mkv
-* mov
-* avi
-* webm
-
----
-
-## ⚙️ Requirements
-
-* Python 3.10+
-* FFmpeg
-* HuggingFace account (for diarization models)
-
----
-
-## 🛠️ Installation
-
-### 1️⃣ Clone Repository
-
-```bash
-git clone https://github.com/meistro57/Transcripto.git
-cd Transcripto
-```
-
----
-
-### 2️⃣ Create Virtual Environment
-
-#### Windows PowerShell
+1. Install Python 3.10+
+2. Open PowerShell and create a virtual environment:
 
 ```powershell
 py -3.10 -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-#### Windows CMD
+3. Install dependencies:
 
-```cmd
-venv\Scripts\activate.bat
+```powershell
+pip install -U whisperx python-dotenv omegaconf pyannote.audio
 ```
 
-#### Linux / WSL
+4. Install FFmpeg:
+
+```powershell
+winget install ffmpeg
+```
+
+## Install (WSL2)
+
+1. Create and activate a venv:
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
----
-
-### 3️⃣ Install Dependencies
+2. Install dependencies:
 
 ```bash
-pip install -U whisperx python-dotenv omegaconf
+pip install -U whisperx python-dotenv omegaconf pyannote.audio
 ```
 
----
+3. Install FFmpeg:
 
-### 4️⃣ Install FFmpeg
+```bash
+sudo apt-get update
+sudo apt-get install -y ffmpeg
+```
 
-#### Windows (Recommended)
+## Hugging Face Token
+
+Create a token at:
+
+https://huggingface.co/settings/tokens
+
+Create a `.env` file in the app folder:
+
+```
+HF_TOKEN=your_token_here
+```
+
+### About the token and cost
+
+The token is only used to authenticate and download the diarization model weights from HuggingFace. It does not incur usage-based charges by itself. Any compute cost comes from running the models on your own machine. If you use private or paid HuggingFace model repositories, you may still need an appropriate subscription or access plan.
+
+## First Run and Offline Mode
+
+Transcripto uses a **portable cache** in the app folder:
+
+- `._hf_cache`
+- `._torch_cache`
+
+On first run, it downloads and stores all required models. After that, it can run fully offline with the cached models.
+
+To force a clean offline-ready cache, open the app and click **Prepare Offline Models**.
+
+If the diarization models are not present and `HF_TOKEN` is missing, you will see a clear error in the app. The token is only required to download gated models the first time.
+
+## Usage
+
+Double-click `transcripto_gui.py` (or run it from a terminal):
 
 ```powershell
-winget install ffmpeg
+python transcripto_gui.py
 ```
 
-Verify installation:
+## Outputs
 
-```bash
-ffmpeg -version
-```
+For each input file `example.mp4`, Transcripto writes:
 
----
+- `example.txt` with timestamped transcript lines
+- `example.json` with structured segments
 
-### 5️⃣ Create `.env` File
+After each batch run it also writes:
 
-```
-HF_TOKEN=your_huggingface_token_here
-MODEL_SIZE=base
-```
+- `summary.txt` with NotebookLM-ready concatenated transcripts
 
-Get a HuggingFace token here:
-
-[https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
-
----
-
-## 🚀 Usage
-
-```bash
-python Transcripto.py "input_file.mp4"
-```
-
-### Quick GPU Check
-
-```bash
-python - <<'PY'
-import torch
-print("cuda:", torch.cuda.is_available())
-print("mps:", hasattr(torch.backends, "mps") and torch.backends.mps.is_available())
-PY
-```
-
----
-
-## 🧠 Pipeline Overview
-
-```
-Media Input
-   ↓
-FFmpeg Conversion
-   ↓
-Voice Activity Detection (Silero)
-   ↓
-WhisperX Transcription
-   ↓
-Timestamp Alignment
-   ↓
-Speaker Diarization (Pyannote)
-   ↓
-TXT + JSON Output
-```
-
----
-
-## ⚡ Performance Notes
-
-| Hardware | 30 Minute File |
-| -------- | -------------- |
-| CPU      | ~15-30 minutes |
-| GPU      | ~5-10 minutes  |
-
----
-
-## 🧩 Configuration Options
-
-Inside `.env`:
-
-```
-MODEL_SIZE=base
-FORCE_CPU=0
-MIN_SPEAKERS=2
-MAX_SPEAKERS=2
-DEVICE=auto
-COMPUTE_TYPE=
-ENABLE_TF32=0
-```
-
-Notes:
-* `DEVICE=auto` will prefer CUDA, then Apple MPS, then CPU. You can force `cpu`, `cuda`, or `mps`.
-* `COMPUTE_TYPE` lets you override precision (e.g., `float16` on CUDA). Leave blank for defaults.
-* `ENABLE_TF32=1` can speed up CUDA on Ampere+ GPUs with a small precision tradeoff.
-
----
-
-## 🖥️ GPU Setup (Windows / WSL2)
-
-When a GPU is present but PyTorch lacks CUDA support, the app will:
-* Detect platform (Windows vs WSL2)
-* Detect CUDA driver version (via `nvidia-smi`)
-* Print a pip install command for the closest supported CUDA build
-
-Example log output:
-
-```bash
-python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
-```
-
-If the suggested command fails, use the PyTorch “Get Started” selector and choose your OS + Pip + CUDA version.
-
-### GPU Setup Assistant (Windows / WSL2)
-
-Run:
-
-```bash
-python setup_gpu.py
-```
-
-This script checks:
-* NVIDIA GPU presence
-* CUDA driver version
-* PyTorch CUDA availability
-
-It prints the best matching pip command for your system.
-
----
-
-## 🧪 Troubleshooting
-
-### FFmpeg Not Found
-
-Install FFmpeg and ensure it is available in your system PATH.
-
----
-
-### HuggingFace Token Missing
-
-Diarization requires authentication. Add your token to `.env`.
-
-**About the HuggingFace token and cost**
-
-The token is only used to authenticate and download the diarization model weights from HuggingFace. It does not incur usage-based charges by itself. Any compute cost comes from running the models on your own machine.
-If you use private or paid HuggingFace model repositories, you may still need an appropriate subscription or access plan.
-
----
+## Troubleshooting
 
 ### PyTorch Safe Loading Errors
 
-The script automatically allowlists trusted model checkpoint classes.
+If you see an error mentioning “Unsupported global” or “safe globals”, the app logs a hint about extending the allowlist in `transcripto_gui.py`.
 
----
+### HuggingFace Gated Models
 
-## 📦 Dependencies
+If diarization fails, confirm your token has access to the required models and that it is set in `.env` or pasted into the app.
 
-* WhisperX
-* Pyannote Audio
-* PyTorch
-* FFmpeg
-* Python-Dotenv
+### Symlink Warning on Windows
 
----
+If you see HuggingFace cache symlink warnings, you can ignore them or run the app with Developer Mode enabled in Windows.
 
-## 🗺️ Roadmap
+## Notes
 
-* Batch folder transcription
-* Speaker name training
-* Transcript summarization
-* Semantic transcript search
-* NotebookLM formatting
-* Real-time folder watcher
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome. Feature ideas and optimizations are encouraged.
-
----
-
-## 📜 License
-
-MIT License
-
----
-
-## ⭐ Acknowledgements
-
-* OpenAI Whisper
-* WhisperX
-* Pyannote Audio
-* Silero VAD
-* FFmpeg
-
----
-
-## 💡 Future Vision
-
-This project aims to provide a reliable foundation for:
-
-* Podcast processing
-* Research transcription
-* AI knowledge ingestion
-* Meeting automation
-* Content indexing
+- The app uses `TRANSFORMERS_NO_TORCHVISION=1` to avoid torchvision import issues.
+- On GPU systems, PyTorch must be installed with CUDA support.
 
 ---
 
