@@ -95,8 +95,8 @@ transcription.log        → processing log
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/whisperx-transcriber.git
-cd whisperx-transcriber
+git clone https://github.com/meistro57/Transcripto.git
+cd Transcripto
 ```
 
 ---
@@ -165,7 +165,7 @@ Get a HuggingFace token here:
 ## 🚀 Usage
 
 ```bash
-python whisper_to_text_diarized.py "input_file.mp4"
+python Transcripto.py "input_file.mp4"
 ```
 
 ### Quick GPU Check
