@@ -41,10 +41,10 @@ try:
     except Exception:
         pass
 
-    # Pyannote task specs sometimes present in checkpoints
+    # Pyannote task objects sometimes present in checkpoints
     try:
-        from pyannote.audio.core.task import Specifications  # type: ignore
-        allowlist.append(Specifications)
+        from pyannote.audio.core.task import Specifications, Problem  # type: ignore
+        allowlist.extend([Specifications, Problem])
     except Exception:
         pass
 
@@ -53,6 +53,7 @@ try:
 
 except Exception:
     pass
+
 
 
 
