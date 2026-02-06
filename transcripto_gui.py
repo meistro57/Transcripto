@@ -296,7 +296,9 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
         ui_queue.put(("status", "No compatible media files found."))
         return
 
-    ui_queue.put(("status", f"Found {len(candidates)} file(s)."))
+    total = len(candidates)
+    ui_queue.put(("status", f"Found {total} file(s)."))
+    ui_queue.put(("progress", (0, total)))
     summary_lines: List[str] = []
 
     device, compute_type = pick_device(options.force_cpu)
@@ -314,8 +316,11 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
             ledger_by_folder[parent_folder] = load_ledger(parent_folder)
         ledger = ledger_by_folder[parent_folder]
 
+        ui_queue.put(("progress", (idx - 1, total)))
+
         if not options.overwrite_outputs and already_done(media_path, parent_folder, ledger):
             logging.info(f"Skipping (already done): {media_path.name}")
+            ui_queue.put(("progress", (idx, total)))
             continue
 
         ui_queue.put(("status", f"Processing {idx}/{len(candidates)}: {media_path.name}"))
@@ -359,6 +364,7 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
                 done_dir = parent_folder / "done"
                 done_dir.mkdir(exist_ok=True)
                 shutil.move(str(media_path), str(done_dir / media_path.name))
+            ui_queue.put(("progress", (idx, total)))
 
         except Exception as e:
             logging.exception(f"FAILED: {media_path.name} ({e})")
@@ -372,6 +378,7 @@ def transcribe_batch(options: Options, ui_queue: queue.Queue, stop_event: thread
                     shutil.move(str(media_path), str(failed_dir / media_path.name))
                 except Exception:
                     pass
+            ui_queue.put(("progress", (idx, total)))
             continue
 
     if summary_lines:
@@ -491,7 +498,7 @@ class TranscriptoGUI(tk.Tk):
         self.start_btn.pack(side="left")
         self.stop_btn = ttk.Button(control_frame, text="Stop", command=self._stop, state="disabled")
         self.stop_btn.pack(side="left", padx=8)
-        self.progress = ttk.Progressbar(control_frame, mode="indeterminate")
+        self.progress = ttk.Progressbar(control_frame, mode="determinate")
         self.progress.pack(side="left", fill="x", expand=True, padx=8)
         self.status_var = tk.StringVar(value="Idle")
         ttk.Label(control_frame, textvariable=self.status_var).pack(side="left")
@@ -587,7 +594,7 @@ class TranscriptoGUI(tk.Tk):
         self.stop_event.clear()
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="normal")
-        self.progress.start(10)
+        self.progress.configure(value=0)
 
         token = self.token_var.get().strip()
         if token:
@@ -641,11 +648,14 @@ class TranscriptoGUI(tk.Tk):
             if kind == "status":
                 self.status_var.set(payload)
                 if payload in {"Done.", "Stopped by user."}:
-                    self.progress.stop()
+                    self.progress.configure(value=0)
                     self.start_btn.configure(state="normal")
                     self.stop_btn.configure(state="disabled")
+            elif kind == "progress":
+                current, total = payload
+                self.progress.configure(maximum=total, value=current)
             elif kind == "error":
-                self.progress.stop()
+                self.progress.configure(value=0)
                 self.start_btn.configure(state="normal")
                 self.stop_btn.configure(state="disabled")
                 messagebox.showerror("Error", payload)
