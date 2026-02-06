@@ -43,10 +43,11 @@ try:
 
     # Pyannote task objects sometimes present in checkpoints
     try:
-        from pyannote.audio.core.task import Specifications, Problem  # type: ignore
-        allowlist.extend([Specifications, Problem])
+        from pyannote.audio.core.task import Specifications, Problem, Resolution  # type: ignore
+        allowlist.extend([Specifications, Problem, Resolution])
     except Exception:
         pass
+
 
     if allowlist and hasattr(torch.serialization, "add_safe_globals"):
         torch.serialization.add_safe_globals(allowlist)
