@@ -339,3 +339,7 @@ This project aims to provide a reliable foundation for:
 * AI knowledge ingestion
 * Meeting automation
 * Content indexing
+
+---
+
+Created by a neurodivergent mind — building tools that respect different brains.
