@@ -342,4 +342,4 @@ This project aims to provide a reliable foundation for:
 
 ---
 
-Created by a neurodivergent mind — building tools that respect different brains.
+👉 ⚡Created by a neurodivergent mind — building tools that respect different brains. 🧠
