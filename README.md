@@ -78,7 +78,7 @@ python transcripto_gui.py
 
 1. Choose a folder or switch to **Selected files** and load/pick files.
 2. Set the model, speaker range, and output options.
-3. Click **Start**. Stop finishes the current file and does not begin the next one.
+3. Click **Start**. Stop takes effect between transcription stages; the current file is abandoned without partial output, and no new file starts.
 4. When the run ends, a summary shows processed, skipped, and failed counts, with the first failures listed.
 
 Output options:

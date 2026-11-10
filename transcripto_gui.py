@@ -587,7 +587,7 @@ class TranscriptoGUI(tk.Tk):
             return
         self.stop_event.set()
         self.stop_btn.configure(state="disabled")
-        self.status_var.set("Finishing current file...")
+        self.status_var.set("Stopping...")
 
     def _poll_queues(self) -> None:
         while not self.log_queue.empty():
