@@ -1,4 +1,13 @@
-whisperx
-python-dotenv
-omegaconf
-pyannote.audio
+# Tested with Python 3.12 and the versions noted below.
+# WhisperX and Pyannote change APIs between minor releases, so keep upper bounds.
+whisperx>=3.7,<4
+pyannote.audio>=3.3,<4
+torch>=2.6,<3
+torchaudio>=2.6,<3
+python-dotenv>=1.0,<2
+omegaconf>=2.3,<3
+
+# CUDA note: install torch and torchaudio from the PyTorch index that matches
+# your driver first, then install this file. For example:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+#   pip install -r requirements.txt

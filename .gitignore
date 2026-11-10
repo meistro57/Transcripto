@@ -31,6 +31,8 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# Keep the hand-maintained build spec
+!Transcripto.spec
 
 # Installer logs
 pip-log.txt
@@ -205,3 +207,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Transcripto local data
+_hf_cache/
+_torch_cache/
+Transcribed/
+processed.json
+transcripto_recursive_ledger.json
+transcripto_recursive_BACKUP.py
+summary.txt
+failures.txt
